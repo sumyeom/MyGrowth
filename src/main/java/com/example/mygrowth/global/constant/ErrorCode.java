@@ -41,7 +41,7 @@ public enum ErrorCode {
 
     /* 404 찾을 수 없음 */
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "회원을 찾을 수 없습니다."),
-
+    ROUTINE_NOT_FOUND(HttpStatus.NOT_FOUND, "ROUTINE_NOT_FOUND", "루틴을 찾을 수 없습니다."),
 
     /* 500 서버 오류 */
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"INTERNAL_SERVER_ERROR","서버 오류 입니다."),
