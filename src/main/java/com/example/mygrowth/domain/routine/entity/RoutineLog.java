@@ -32,8 +32,14 @@ public class RoutineLog extends BaseCreatedEntity {
     @Column(name="is_success", nullable = false)
     private boolean isSuccess;
 
-    public RoutineLog(Routine routine, LocalDate date, boolean isSuccess) {
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
+
+    public RoutineLog(Routine routine, User user, LocalDate date, boolean isSuccess) {
         this.routine = routine;
+        this.user = user;
         this.date = date;
         this.isSuccess = isSuccess;
     }

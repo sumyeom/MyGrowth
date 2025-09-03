@@ -14,7 +14,7 @@ public class RoutineCreateResponseDto {
     private final String title;
     private final String description;
     private final RepeatType repeatType;
-    private final List<DayOfWeek> dayOfWeek;
+    private final List<DayOfWeek> daysOfWeek;
     private final int dayOfMonth;
     private final String dayOfYear;
     private final int goalCount;

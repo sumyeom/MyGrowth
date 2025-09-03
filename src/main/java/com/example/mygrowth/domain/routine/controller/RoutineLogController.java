@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+
 @RestController
 @RequestMapping("/routine-logs/check")
 @RequiredArgsConstructor
@@ -18,9 +20,11 @@ public class RoutineLogController {
     @PostMapping()
     public ResponseEntity<Void> routineCheckin(
             @RequestParam Long routineId,
+            @RequestParam(required = false) LocalDate date,
             @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
-        routineLogService.routineCheckin(routineId, customUserDetails.getUser());
+        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+        routineLogService.routineCheckin(routineId, targetDate, customUserDetails.getUser());
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }

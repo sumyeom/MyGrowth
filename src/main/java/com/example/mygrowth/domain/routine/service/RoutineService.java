@@ -29,7 +29,7 @@ public class RoutineService {
         // repeatType 선택 안했을 시 요일반복 default 처리
         RepeatType requestRepeatType = requestDto.getRepeatType() != null ? requestDto.getRepeatType() : RepeatType.DAY_OF_WEEK;
 
-        List<DayOfWeek> daysOfWeek = requestDto.getDayOfWeek();
+        List<DayOfWeek> daysOfWeek = requestDto.getDaysOfWeek();
         if(requestRepeatType == RepeatType.DAY_OF_WEEK && (daysOfWeek == null || daysOfWeek.isEmpty())){
             daysOfWeek = List.of(LocalDate.now().getDayOfWeek());
         }
@@ -147,7 +147,7 @@ public class RoutineService {
         // repeatType 선택 안했을 시 요일반복 default 처리
         RepeatType requestRepeatType = requestDto.getRepeatType() != null ? requestDto.getRepeatType() : RepeatType.DAY_OF_WEEK;
 
-        List<DayOfWeek> daysOfWeek = requestDto.getDayOfWeek();
+        List<DayOfWeek> daysOfWeek = requestDto.getDaysOfWeek();
         if(requestRepeatType == RepeatType.DAY_OF_WEEK && (daysOfWeek == null || daysOfWeek.isEmpty())){
             daysOfWeek = List.of(LocalDate.now().getDayOfWeek());
         }

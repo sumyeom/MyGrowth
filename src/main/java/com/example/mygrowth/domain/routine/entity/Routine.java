@@ -51,7 +51,7 @@ public class Routine extends BaseCreatedEntity {
 
     private LocalDate endDate;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
