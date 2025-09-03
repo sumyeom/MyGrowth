@@ -21,7 +21,7 @@ public class RoutineRequestDto {
     @NotNull(message = "반복 타입을 입력해주세요")
     private final RepeatType repeatType;
 
-    private final List<DayOfWeek> dayOfWeek;
+    private final List<DayOfWeek> daysOfWeek;
 
     private final int dayOfMonth;
 

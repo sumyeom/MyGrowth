@@ -1,5 +1,7 @@
 package com.example.mygrowth.domain.routine.controller;
 
+import com.example.mygrowth.domain.aifeedback.dto.WeeklyReportDto;
+import com.example.mygrowth.domain.aifeedback.service.WeeklyReportService;
 import com.example.mygrowth.domain.routine.dto.*;
 import com.example.mygrowth.domain.routine.service.RoutineService;
 import com.example.mygrowth.global.config.auth.CustomUserDetails;
@@ -20,6 +22,7 @@ import java.util.List;
 @RequestMapping("/routines")
 public class RoutineController {
     private final RoutineService routineService;
+    private final WeeklyReportService weeklyReportService;
 
     @PostMapping
     public ResponseEntity<RoutineCreateResponseDto> createRoutine(
@@ -80,5 +83,15 @@ public class RoutineController {
         routineService.updateRoutine(id, requestDto, customUserDetails.getUser());
         return new ResponseEntity<>(HttpStatus.OK);
     }
+
+
+    @GetMapping("/weekly-summary")
+    public ResponseEntity<WeeklyReportDto> getWeeklySummary(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    ){
+        WeeklyReportDto dto = weeklyReportService.getLatestWeeklyReport(customUserDetails.getUser());
+        return new ResponseEntity<>(dto, HttpStatus.OK);
+    }
+
 
 }

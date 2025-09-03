@@ -1,5 +1,6 @@
 package com.example.mygrowth.domain.user.entity;
 
+import com.example.mygrowth.domain.routine.entity.Routine;
 import com.example.mygrowth.domain.user.enums.Role;
 import com.example.mygrowth.domain.user.enums.UserStatus;
 import com.example.mygrowth.global.common.BaseEntity;
@@ -7,8 +8,11 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
-@Table(name = "'user'")
+@Table(name = "user")
 @Getter
 @NoArgsConstructor
 public class User extends BaseEntity {
@@ -34,6 +38,10 @@ public class User extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     private UserStatus userStatus;
+
+    @OneToMany(mappedBy = "user")
+    private List<Routine> routines = new ArrayList<>();;
+
 
     public User(String email, String name, String nickname, String password){
         this.email = email;
