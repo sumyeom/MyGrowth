@@ -43,7 +43,7 @@ public class WebConfig {
         http.cors(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth ->
-                        auth.requestMatchers("/auth/signup","/auth/login","/auth/refresh").permitAll()
+                        auth.requestMatchers("/api/auth/signup","/api/auth/login","/api/auth/refresh").permitAll()
                                 //static 리스트 경로
                                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                                 // 일부 dispatch 타입
