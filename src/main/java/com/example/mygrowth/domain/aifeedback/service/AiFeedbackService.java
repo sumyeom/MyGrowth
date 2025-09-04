@@ -24,24 +24,6 @@ public class AiFeedbackService {
                 .reduce((a,b) -> a + "," + b)
                 .orElse("");
 
-       /* String prompt = """
-                사용자 루틴 통계:
-                - 성공률: %d%%
-                - 요일별 성공 여부: %s
-                - 목표 루틴 수: %d
-
-                위 데이터를 분석해서 아래 형식으로 피드백을 만들어주세요:
-                1. 이번 주 요약
-                2. 가장 취약한 요일 분석
-                3. 다음 주 루틴 전략 추천
-
-                한국말로 피드백해줘
-                """.formatted(
-                data.weeklyStats().totalSuccessRate(),
-                daily,
-                data.weeklyStats().targetRoutineCount()
-        );*/
-
         String prompt = """
                 너는 생활 루틴 코치야.
                 주어진 데이터를 보고 사용자에게 짧은 피드백을 1개 제공해.

@@ -19,7 +19,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/routines")
+@RequestMapping("/api/routines")
 public class RoutineController {
     private final RoutineService routineService;
     private final WeeklyReportService weeklyReportService;

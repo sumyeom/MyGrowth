@@ -30,6 +30,7 @@ public enum ErrorCode {
     SOCIAL_PASSWORD_ALREADY_SET(HttpStatus.BAD_REQUEST, "SOCIAL_PASSWORD_ALREADY_SET", "이미 비밀번호가 설정되었습니다."),
     SOCIAL_PASSWORD_REQUIRED(HttpStatus.BAD_REQUEST, "SOCIAL_PASSWORD_REQUIRED", "소셜 로그인 계정은 비밀번호 설정이 필요합니다."),
     INVALID_DATE(HttpStatus.BAD_REQUEST, "INVALID_DATE", "미래의 날짜는 체크가 불가능합니다."),
+    TOO_OLD_DATE(HttpStatus.BAD_REQUEST, "TOO_OLD_DATE", "너무 오래전 루틴입니다."),
 
 
     /* 401 인증 오류 */
