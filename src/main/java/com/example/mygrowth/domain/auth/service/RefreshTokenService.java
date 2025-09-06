@@ -39,8 +39,8 @@ public class RefreshTokenService {
 
     private void addRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
         Cookie cookie = new Cookie("refresh_token", refreshToken);
-        cookie.isHttpOnly();
-        cookie.setSecure(true); // false 가능
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false); // false 가능
         cookie.setPath("/");
         cookie.setMaxAge(COOKIE_MAX_AGE);
         response.addCookie(cookie);

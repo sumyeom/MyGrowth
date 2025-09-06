@@ -50,8 +50,8 @@ public class WebConfig {
                                 .dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.INCLUDE,
                                         DispatcherType.ERROR).permitAll()
                                 // path 별로 접근이 가능한 권한 설정
-                                .requestMatchers("/admin/**").hasRole("ADMIN")
-                                .requestMatchers("/user/**").hasRole("USER")
+                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                                .requestMatchers("/api/users/**").hasRole("USER")
                                 // 나머지는 인증이 필요
                                 .anyRequest().authenticated()
                 )
