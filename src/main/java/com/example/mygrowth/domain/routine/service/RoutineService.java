@@ -2,7 +2,9 @@ package com.example.mygrowth.domain.routine.service;
 
 import com.example.mygrowth.domain.routine.dto.*;
 import com.example.mygrowth.domain.routine.entity.Routine;
+import com.example.mygrowth.domain.routine.entity.RoutineLog;
 import com.example.mygrowth.domain.routine.enums.RepeatType;
+import com.example.mygrowth.domain.routine.repository.RoutineLogRepository;
 import com.example.mygrowth.domain.routine.repository.RoutineRepository;
 import com.example.mygrowth.domain.routine.util.RoutineValidationUtils;
 import com.example.mygrowth.domain.user.entity.User;
@@ -17,12 +19,14 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class RoutineService {
     private final RoutineRepository routineRepository;
+    private final RoutineLogRepository routineLogRepository;
 
     @Transactional
     public RoutineCreateResponseDto creatRoutine(RoutineRequestDto requestDto, User loginUser) {
@@ -89,13 +93,25 @@ public class RoutineService {
 
         Page<Routine> routinePage = routineRepository.findByUserId(pageable, user.getId());
 
+        LocalDate today = LocalDate.now();
+
         return routinePage.stream()
-                .map(routine -> new RoutineFindResponseDto(
-                        routine.getId(),
-                        routine.getTitle(),
-                        routine.getRepeatType()
-                ))
+                .map(routine -> {
+                    // 해당 루틴의 오늘 날짜 로그 조회
+                    Optional<RoutineLog> todayLog = routineLogRepository.findByRoutineIdAndDate(routine.getId(), today);
+
+                    // isSuccess 값 설정
+                    boolean isSuccess = todayLog.map(RoutineLog::isSuccess).orElse(false);
+
+                    // DTO 반환
+                    return new RoutineFindResponseDto(
+                            routine.getId(),
+                            isSuccess,
+                            routine.getTitle()
+                    );
+                })
                 .collect(Collectors.toList());
+
     }
 
     public Page<RoutineFindResponseDto> findRoutineByDate(int page, LocalDate date, User loginUser) {
@@ -105,7 +121,7 @@ public class RoutineService {
 
         List<Routine> routineList = routineRepository.findByUserId(loginUser.getId());
         List<Routine> filteredList = routineList.stream()
-                .filter(r -> !date.isBefore(r.getStartDate()) && !date.isAfter(r.getEndDate()))
+                .filter(r -> !date.isBefore(r.getStartDate()) && (r.getEndDate() == null || !date.isAfter(r.getEndDate())))
                 .filter(r-> {
                     switch(r.getRepeatType()){
                         case DAY_OF_WEEK:
@@ -125,7 +141,20 @@ public class RoutineService {
         List<RoutineFindResponseDto> paged = filteredList.stream()
                 .skip(offset)
                 .limit(pageSize)
-                .map(RoutineFindResponseDto::fromEntity)
+                .map(routine -> {
+                    // 해당 루틴의 오늘 날짜 로그 조회
+                    Optional<RoutineLog> todayLog = routineLogRepository.findByRoutineIdAndDate(routine.getId(), date);
+
+                    // isSuccess 값 설정
+                    boolean isSuccess = todayLog.map(RoutineLog::isSuccess).orElse(false);
+
+                    // DTO 반환
+                    return new RoutineFindResponseDto(
+                            routine.getId(),
+                            isSuccess,
+                            routine.getTitle()
+                    );
+                })
                 .toList();
         return new PageImpl<>(paged, PageRequest.of(page - 1, pageSize), filteredList.size());
     }
