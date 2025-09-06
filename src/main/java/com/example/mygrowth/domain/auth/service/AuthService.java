@@ -35,6 +35,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
 
+    @Transactional
     public SignupResponseDto signup(SignupRequestDto requestDto) {
         // 기존 사용자 체크
         Optional<User> findUser = userRepository.findByEmail(requestDto.getEmail());
@@ -57,6 +58,7 @@ public class AuthService {
         return new SignupResponseDto(savedUser);
     }
 
+    @Transactional
     public LoginTokenResponseDto login(LoginTokenRequestDto requestDto, HttpServletResponse response) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(requestDto.getEmail(), requestDto.getPassword())
@@ -73,11 +75,17 @@ public class AuthService {
             throw new ApiException(ErrorCode.INVALID_PASSWORD);
         }
 
+        boolean isFirstLogin = findUser.isFirstLogin();
+        if(isFirstLogin){
+            findUser.updateFirstLogin();
+            userRepository.save(findUser);
+        }
+
         String accessToken = tokenService.generateAccessTokens(findUser.getEmail(), findUser.getRole().getName());
         String refreshToken = tokenService.generateRefreshToken(findUser.getEmail());
 
         refreshTokenService.saveRefreshToken(findUser.getEmail(), refreshToken, response);
-        return new LoginTokenResponseDto(accessToken);
+        return new LoginTokenResponseDto(accessToken, isFirstLogin);
     }
 
     public void logout(String accessToken, HttpServletResponse response) {
@@ -106,7 +114,7 @@ public class AuthService {
         }
 
         String newAccessToken = tokenService.reissueAccessToken(refreshToken);
-        return new LoginTokenResponseDto(newAccessToken);
+        return new LoginTokenResponseDto(newAccessToken, true);
     }
 
 }
