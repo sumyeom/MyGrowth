@@ -30,6 +30,8 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private String nickname;
 
+    private String selfIntroduction;
+
     @Column(nullable = false)
     private String password;
 
@@ -39,8 +41,10 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private UserStatus userStatus;
 
+    private boolean isFirstLogin = true;
+
     @OneToMany(mappedBy = "user")
-    private List<Routine> routines = new ArrayList<>();;
+    private List<Routine> routines = new ArrayList<>();
 
 
     public User(String email, String name, String nickname, String password){
@@ -50,6 +54,21 @@ public class User extends BaseEntity {
         this.password = password;
         this.role = Role.USER;
         this.userStatus = UserStatus.ACTIVE;
+    }
 
+    public void updateName(String newName){
+        this.name = newName;
+    }
+
+    public void updateNickname(String newNickname){
+        this.nickname = newNickname;
+    }
+
+    public void updateIntroduction(String newIntroduction){
+        this.selfIntroduction = newIntroduction;
+    }
+
+    public void updateFirstLogin(){
+        this.isFirstLogin = false;
     }
 }
