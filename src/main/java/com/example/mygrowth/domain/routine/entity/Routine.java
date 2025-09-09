@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -55,6 +56,9 @@ public class Routine extends BaseCreatedEntity {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RoutineOverride> overrides = new ArrayList<>();
+
     public Routine(String title, String description, RepeatType repeatType, List<DayOfWeek> daysOfWeek, Integer dayOfMonth, String dayOfYear, Integer goalCount, boolean isPublic, LocalDate startDate, LocalDate endDate, User user) {
         this.title = title;
         this.description = description;
@@ -79,6 +83,14 @@ public class Routine extends BaseCreatedEntity {
         this.goalCount = goalCount;
         this.isPublic = isPublic;
         this.startDate = startDate;
+        this.endDate = endDate;
+    }
+
+    public void updateStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public void updateEndDate(LocalDate endDate) {
         this.endDate = endDate;
     }
 
