@@ -6,17 +6,17 @@ import lombok.Getter;
 @Getter
 @Builder
 public class RoutineCheckResultDto {
-    private boolean isChecked;
+    private boolean isSuccess;
     private String message;
     private Integer streakDays;
 
-    public RoutineCheckResultDto(boolean isChecked, String message){
-        this.isChecked = isChecked;
+    public RoutineCheckResultDto(boolean isSuccess, String message){
+        this.isSuccess = isSuccess;
         this.message = message;
     }
 
-    public RoutineCheckResultDto(boolean isChecked, String message, Integer streakDays){
-        this.isChecked = isChecked;
+    public RoutineCheckResultDto(boolean isSuccess, String message, Integer streakDays){
+        this.isSuccess = isSuccess;
         this.message = message;
         this.streakDays = streakDays;
     }

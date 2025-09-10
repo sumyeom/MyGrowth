@@ -19,6 +19,4 @@ public class RoutineFindResponseDto {
         this.isSuccess = isSuccess;
         this.title = title;
     }
-
-
 }

@@ -12,4 +12,6 @@ public interface RoutineLogRepository extends JpaRepository<RoutineLog,Long> {
     List<RoutineLog> findByRoutine_User_IdAndDateBetween(Long userId, LocalDate start, LocalDate end);
 
     List<RoutineLog> findByRoutineIdAndDateBetweenOrderByDateDesc(Long routineId, LocalDate localDate, LocalDate endDate);
+
+    List<RoutineLog> findByRoutine_User_Id(Long id);
 }

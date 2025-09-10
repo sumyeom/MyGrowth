@@ -49,9 +49,9 @@ public class RoutineLogService {
     private void validateCheckinDate(Routine routine, LocalDate targetDate) {
         LocalDate today = LocalDate.now();
 
-        if(targetDate.isAfter(today)) {
-            throw new ApiException(ErrorCode.INVALID_DATE);
-        }
+//        if(targetDate.isAfter(today)) {
+//            throw new ApiException(ErrorCode.INVALID_DATE);
+//        }
 
         // 과거 너무 오래된 날짜 제한
         if(targetDate.isBefore(today.minusDays(50))) {
