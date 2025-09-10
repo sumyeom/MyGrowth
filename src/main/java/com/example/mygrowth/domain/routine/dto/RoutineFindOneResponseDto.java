@@ -13,7 +13,7 @@ public class RoutineFindOneResponseDto {
     private final String title;
     private final String description;
     private final RepeatType repeatType;
-    private final List<DayOfWeek> dayOfWeek;
+    private final List<DayOfWeek> daysOfWeek;
     private final int dayOfMonth;
     private final String dayOfYear;
     private final int goalCount;
@@ -21,12 +21,12 @@ public class RoutineFindOneResponseDto {
     private final LocalDate startDate;
     private final LocalDate endDate;
 
-    public RoutineFindOneResponseDto(Long id, String title, String description, RepeatType repeatType, List<DayOfWeek> dayOfWeek, int dayOfMonth, String dayOfYear, int goalCount, boolean isPublic, LocalDate startDate, LocalDate endDate) {
+    public RoutineFindOneResponseDto(Long id, String title, String description, RepeatType repeatType, List<DayOfWeek> daysOfWeek, int dayOfMonth, String dayOfYear, int goalCount, boolean isPublic, LocalDate startDate, LocalDate endDate) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.repeatType = repeatType;
-        this.dayOfWeek = dayOfWeek;
+        this.daysOfWeek = daysOfWeek;
         this.dayOfMonth = dayOfMonth;
         this.dayOfYear = dayOfYear;
         this.goalCount = goalCount;

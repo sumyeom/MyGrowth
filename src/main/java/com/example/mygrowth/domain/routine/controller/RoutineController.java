@@ -36,9 +36,10 @@ public class RoutineController {
     @GetMapping("/{id}")
     public ResponseEntity<RoutineFindOneResponseDto> findRoutineById(
             @PathVariable Long id,
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @AuthenticationPrincipal CustomUserDetails customUserDetails
     ){
-        RoutineFindOneResponseDto responseDto = routineService.findRoutineById(id, customUserDetails.getUser());
+        RoutineFindOneResponseDto responseDto = routineService.findRoutineById(id, date, customUserDetails.getUser());
         return new ResponseEntity<>(responseDto, HttpStatus.OK);
     }
 
@@ -68,6 +69,7 @@ public class RoutineController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRoutine(
             @PathVariable Long id,
+
             @AuthenticationPrincipal CustomUserDetails customUserDetails
     ){
         routineService.deleteRoutine(id, customUserDetails.getUser());
@@ -78,9 +80,11 @@ public class RoutineController {
     public ResponseEntity<Void> updateRoutine(
             @PathVariable Long id,
             @RequestBody RoutineRequestDto requestDto,
+            @RequestParam("deleteType") String deleteType,
+            @RequestParam("selectedDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate selectedDate,
             @AuthenticationPrincipal CustomUserDetails customUserDetails
     ){
-        routineService.updateRoutine(id, requestDto, customUserDetails.getUser());
+        routineService.updateRoutine(id, requestDto, deleteType, selectedDate, customUserDetails.getUser());
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
