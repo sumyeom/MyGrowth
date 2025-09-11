@@ -23,8 +23,8 @@ import java.util.Optional;
 @Slf4j
 public class RoutineStatsService {
     private final RoutineRepository routineRepository;
-    private final RoutineLogRepository routineLogRepository;
-    public RoutineSuccessRate getSuccessRate(String period, User loginUser) {
+
+    public RoutineSuccessRate getSuccessRate(User loginUser) {
 
         double successRateWeekly = 0;
         double successRateMonthly = 0;
