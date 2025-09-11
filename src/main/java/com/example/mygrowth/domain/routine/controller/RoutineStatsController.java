@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/statistics")
+@RequestMapping("/api/routines/statistics")
 public class RoutineStatsController {
     private final RoutineStatsService routineStatsService;
     @GetMapping("/success-rate")
