@@ -17,6 +17,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
  * 웹 설정
@@ -44,6 +45,13 @@ public class WebConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers("/api/auth/signup","/api/auth/login","/api/auth/refresh").permitAll()
+                                .requestMatchers(
+                                        "/swagger-ui/**",
+                                        "/swagger-ui.html",
+                                        "/swagger-ui",
+                                        "/v3/api-docs/**",
+                                        "/api-docs/**",
+                                        "/swagger-resources/**").permitAll()
                                 //static 리스트 경로
                                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                                 // 일부 dispatch 타입
@@ -62,7 +70,7 @@ public class WebConfig {
                 .sessionManagement(
                         session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
-                .addFilterAfter(jwtAuthFilter, ExceptionTranslationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

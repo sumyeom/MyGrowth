@@ -32,7 +32,7 @@ public class WeeklyReportScheduler {
 
     // 매주 일요일 밤 23:59에 실행
     //@Scheduled(cron = "0 59 23 * * SUN")
-    @Scheduled(fixedDelay  = 300000)
+    //@Scheduled(fixedDelay  = 300000)
     @Transactional
     public void generateWeeklyReports(){
         // 1. 지난주 날짜 범위 계산
