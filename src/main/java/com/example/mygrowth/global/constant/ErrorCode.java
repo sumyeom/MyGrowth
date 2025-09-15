@@ -32,6 +32,8 @@ public enum ErrorCode {
     INVALID_DATE(HttpStatus.BAD_REQUEST, "INVALID_DATE", "미래의 날짜는 체크가 불가능합니다."),
     TOO_OLD_DATE(HttpStatus.BAD_REQUEST, "TOO_OLD_DATE", "너무 오래전 루틴입니다."),
     INVALID_DELETE_TYPE(HttpStatus.BAD_REQUEST, "INVALID_DELETE_TYPE", "유효하지 않은 타입입니다."),
+    ALREADY_JOIN_CHALLENGE(HttpStatus.BAD_REQUEST, "ALREADY_JOIN_CHALLENGE", "이미 참여한 챌린지입니다."),
+    OVER_PARTICIPANTS(HttpStatus.BAD_REQUEST, "OVER_PARTICIPANTS", "정원이 초과되었습니다."),
 
 
     /* 401 인증 오류 */
@@ -46,6 +48,7 @@ public enum ErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "회원을 찾을 수 없습니다."),
     ROUTINE_NOT_FOUND(HttpStatus.NOT_FOUND, "ROUTINE_NOT_FOUND", "루틴을 찾을 수 없습니다."),
     REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "REPORT_NOT_FOUND", "리포트를 찾을 수 없습니다."),
+    CHALLENGE_NOT_FOUND(HttpStatus.NOT_FOUND, "CHALLENGE_NOT_FOUND", "챌린지를 찾을 수 없습니다."),
 
     /* 500 서버 오류 */
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"INTERNAL_SERVER_ERROR","서버 오류 입니다."),
