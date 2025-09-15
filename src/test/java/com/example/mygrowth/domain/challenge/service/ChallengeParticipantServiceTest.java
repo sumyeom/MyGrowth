@@ -19,10 +19,12 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -119,16 +121,33 @@ class ChallengeParticipantServiceTest {
 
         // 🚨 동시성 문제 발생 확인
         if (result.getCurrentParticipants() > challenge.getMaxParticipants()) {
-            System.out.println("\n🚨 동시성 문제 발생!");
+            System.out.println("\n 동시성 문제 발생!");
             System.out.println("   정원(" + challenge.getMaxParticipants() + "명)을 " +
                     (result.getCurrentParticipants() - challenge.getMaxParticipants()) + "명 초과했습니다!");
         }
 
         if (result.getCurrentParticipants() != actualDbCount) {
-            System.out.println("\n데이터 불일치 문제!");
+            System.out.println("\n 데이터 불일치 문제!");
             System.out.println("   Entity 참여자 수와 실제 DB 레코드 수가 다릅니다!");
         }
 
+    }
+
+    // ================= 실제 테스트 =================
+    @Test
+    @DisplayName("동시성 비교 테스트")
+    public void concurrencyComparisonTest() throws InterruptedException {
+        int threadCount = 1000;
+
+        System.out.println("=== Synchronized 메서드 테스트 ===");
+        long start1 = System.currentTimeMillis();
+        testConcurrency(threadCount, challengeParticipantService::joinChallengeWithSync);
+        System.out.println("Synchronized 소요 시간: " + (System.currentTimeMillis() - start1) + "ms\n");
+
+        System.out.println("=== 챌린지별 락 테스트 ===");
+        long start2 = System.currentTimeMillis();
+        testConcurrency(threadCount, challengeParticipantService::joinChallengeWithChallengeSpecificLock);
+        System.out.println("챌린지별 락 소요 시간: " + (System.currentTimeMillis() - start2) + "ms");
     }
 
     // 헬퍼 메서드들
@@ -147,7 +166,7 @@ class ChallengeParticipantServiceTest {
     private List<User> createTestUsers(int count) {
         List<User> users = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            String email = "test" + i + "@example.com";
+            String email = "test" + UUID.randomUUID() + "@example.com";
             String nickname = "TestUser" + i;
             User user = new User(email,nickname ,nickname, "password123");
             users.add(userRepository.save(user));
@@ -155,4 +174,39 @@ class ChallengeParticipantServiceTest {
         return users;
     }
 
+
+    // 멀티스레드 동시 실행용 헬퍼
+    private void testConcurrency(int threadCount, BiConsumer<Long, Long> joinFunction) throws InterruptedException {
+        Challenge challenge = createTestChallenge("동시성 테스트 챌린지", 100);
+        Challenge savedChallenge = challengeRepository.save(challenge);
+        List<User> userIds = createTestUsers(threadCount);
+
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch latch = new CountDownLatch(threadCount);
+
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failureCount = new AtomicInteger(0);
+
+        for (int i = 0; i < threadCount; i++) {
+            Long userId = userIds.get(i).getId();
+            executor.submit(() -> {
+                try {
+                    joinFunction.accept(savedChallenge.getId(), userId);
+                    successCount.incrementAndGet();
+                } catch (Exception e) {
+                    failureCount.incrementAndGet();
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await();
+        executor.shutdown();
+
+        // 결과 출력
+        long dbCount = challengeParticipantRepository.countByChallengeId(savedChallenge.getId());
+        System.out.println("성공: " + successCount.get() + ", 실패: " + failureCount.get());
+        System.out.println("DB 레코드: " + dbCount + "건\n");
+    }
 }

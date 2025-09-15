@@ -6,6 +6,7 @@ import com.example.mygrowth.domain.challenge.entity.ChallengeParticipant;
 import com.example.mygrowth.domain.challenge.repository.ChallengeParticipantRepository;
 import com.example.mygrowth.domain.challenge.repository.ChallengeRepository;
 import com.example.mygrowth.domain.user.entity.User;
+import com.example.mygrowth.domain.user.repository.UserRepository;
 import com.example.mygrowth.global.constant.ErrorCode;
 import com.example.mygrowth.global.exception.ApiException;
 import jakarta.transaction.Transactional;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.example.mygrowth.domain.challenge.enums.ChallengeStatus.ONGOING;
 
@@ -21,6 +23,7 @@ import static com.example.mygrowth.domain.challenge.enums.ChallengeStatus.ONGOIN
 public class ChallengeParticipantService {
     private final ChallengeRepository challengeRepository;
     private final ChallengeParticipantRepository challengeParticipantRepository;
+    private final UserRepository userRepository;
 
     /**
      * 챌린지 참여
@@ -60,5 +63,88 @@ public class ChallengeParticipantService {
         challenge.incrementParticipants();
 
         return ChallengeParticipantResponseDto.from(saved);
+    }
+
+
+    // synchronized 메서드별 락
+    @Transactional
+    public synchronized void joinChallengeWithSync(Long id, Long loginUserId) {
+        User user = userRepository.findById(loginUserId)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+
+        // 챌린지 조회
+        Challenge challenge =  challengeRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.CHALLENGE_NOT_FOUND));
+
+        // 이미 참여한 챌린지인지 확인
+        if(challengeParticipantRepository.existsByChallengeIdAndUserId(challenge.getId(), loginUserId)){
+            throw new ApiException(ErrorCode.ALREADY_JOIN_CHALLENGE);
+        }
+
+        // 정원 확인
+        if(challenge.getCurrentParticipants() >= challenge.getMaxParticipants()){
+            throw new ApiException(ErrorCode.OVER_PARTICIPANTS);
+        }
+
+
+        // 챌린지 참여
+        ChallengeParticipant challengeParticipant = new ChallengeParticipant(
+                LocalDate.now(),
+                ONGOING,
+                user,
+                challenge
+        );
+
+        // 챌린지 참여 저장
+        ChallengeParticipant saved = challengeParticipantRepository.save(challengeParticipant);
+
+        // 참여자 추가
+        challenge.incrementParticipants();
+
+        //return ChallengeParticipantResponseDto.from(saved);
+    }
+
+    // 챌린지별 락
+    private final ConcurrentHashMap<Long, Object> challengeLocks = new ConcurrentHashMap<>();
+
+    public void joinChallengeWithChallengeSpecificLock(Long id, Long loginUserId) {
+
+        Object lock = challengeLocks.computeIfAbsent(id,k -> new Object());
+
+        synchronized (lock) {
+            User user = userRepository.findById(loginUserId)
+                    .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+            // 챌린지 조회
+            Challenge challenge =  challengeRepository.findById(id)
+                    .orElseThrow(() -> new ApiException(ErrorCode.CHALLENGE_NOT_FOUND));
+
+            // 이미 참여한 챌린지인지 확인
+            if(challengeParticipantRepository.existsByChallengeIdAndUserId(challenge.getId(), loginUserId)){
+                throw new ApiException(ErrorCode.ALREADY_JOIN_CHALLENGE);
+            }
+
+            // 정원 확인
+            if(challenge.getCurrentParticipants() >= challenge.getMaxParticipants()){
+                throw new ApiException(ErrorCode.OVER_PARTICIPANTS);
+            }
+
+
+            // 챌린지 참여
+            ChallengeParticipant challengeParticipant = new ChallengeParticipant(
+                    LocalDate.now(),
+                    ONGOING,
+                    user,
+                    challenge
+            );
+
+            // 챌린지 참여 저장
+            ChallengeParticipant saved = challengeParticipantRepository.save(challengeParticipant);
+
+            // 참여자 추가
+            challenge.incrementParticipants();
+
+            //return ChallengeParticipantResponseDto.from(saved);
+        }
+
     }
 }
