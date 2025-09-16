@@ -40,11 +40,13 @@ public class Challenge extends BaseCreatedEntity {
     private int maxParticipants;
 
     @Column(nullable = false)
-    private int currentParticipants = 0;
+    private int currentParticipants;
 
     @Column(nullable = false)
     private boolean active;
 
+    @Version
+    private Long version;
 
     public Challenge(String title, String description, LocalDate startDate, LocalDate endDate, Long targetCount, int maxParticipants, boolean active) {
         this.title = title;

@@ -11,9 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -25,8 +23,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest // 전체 스프링 컨텍스트 로딩
 @ActiveProfiles("test")
@@ -47,6 +43,7 @@ class ChallengeParticipantServiceTest {
     @Autowired
     private UserRepository userRepository;
 
+    // ================= 실제 테스트 =================
     @Test
     @DisplayName("동시성 문제 체험 - 1")
     void 동시성_문제_1() throws InterruptedException{
@@ -133,11 +130,10 @@ class ChallengeParticipantServiceTest {
 
     }
 
-    // ================= 실제 테스트 =================
     @Test
     @DisplayName("동시성 비교 테스트")
     public void concurrencyComparisonTest() throws InterruptedException {
-        int threadCount = 1000;
+        int threadCount = 5000;
 
         System.out.println("=== Synchronized 메서드 테스트 ===");
         long start1 = System.currentTimeMillis();
@@ -150,7 +146,85 @@ class ChallengeParticipantServiceTest {
         System.out.println("챌린지별 락 소요 시간: " + (System.currentTimeMillis() - start2) + "ms");
     }
 
-    // 헬퍼 메서드들
+    @Test
+    @DisplayName("비관적락 & 낙관적락 테스트 & 분산락")
+    public void concurrencyComparisonTest2() throws InterruptedException {
+        int threadCount = 1000;
+
+        System.out.println("=== 비관적 락 테스트 ===");
+        long start1 = System.currentTimeMillis();
+        testConcurrency(threadCount, challengeParticipantService::joinChallengeWithPessimisticLock);
+        System.out.println("PessimisticLock 소요 시간 : " + (System.currentTimeMillis() - start1) + "ms");
+
+        System.out.println("=== 낙관적 락 테스트 ===");
+        long start2 = System.currentTimeMillis();
+        testConcurrency(threadCount, challengeParticipantService::joinChallengeWithOptimisticLock);
+        System.out.println("OptimisticLock 소요 시간 : " +  (System.currentTimeMillis() - start2) + "ms");
+
+        System.out.println("=== 분산락 테스트 ===");
+        long start3 = System.currentTimeMillis();
+        testConcurrency(threadCount, challengeParticipantService::joinChallengeWithRedisLock);
+        System.out.println("RedisRock 소요 시간 : " +  (System.currentTimeMillis() - start3) + "ms");
+    }
+
+    @Test
+    @DisplayName("Redis 분산락 - 멀티 서버 시뮬레이션")
+    void multiServerRedisLockSimulation() throws InterruptedException {
+        int maxParticipants = 50;
+        int totalUsers = 100; // 50명씩 2대 서버 시뮬레이션
+        int serverCount = 2;
+
+        Challenge challenge = createTestChallenge("멀티 서버 시뮬레이션 챌린지", maxParticipants);
+        Challenge savedChallenge = challengeRepository.save(challenge);
+
+        List<User> users = createTestUsers(totalUsers);
+
+        // 서버별 스레드풀 생성 (멀티서버 시뮬레이션)
+        ExecutorService[] servers = new ExecutorService[serverCount];
+        for (int i = 0; i < serverCount; i++) {
+            servers[i] = Executors.newFixedThreadPool(totalUsers / serverCount);
+        }
+
+        CountDownLatch latch = new CountDownLatch(totalUsers);
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failureCount = new AtomicInteger(0);
+
+        long startTime = System.currentTimeMillis();
+
+        for (int i = 0; i < totalUsers; i++) {
+            final User user = users.get(i);
+            // 서버 선택 (라운드 로빈)
+            ExecutorService server = servers[i % serverCount];
+
+            server.submit(() -> {
+                try {
+                    challengeParticipantService.joinChallengeWithRedisLock(savedChallenge.getId(), user.getId());
+                    successCount.incrementAndGet();
+                } catch (Exception e) {
+                    failureCount.incrementAndGet();
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await();
+
+        for (ExecutorService server : servers) {
+            server.shutdown();
+        }
+
+        long endTime = System.currentTimeMillis();
+        long actualDbCount = challengeParticipantRepository.countByChallengeId(savedChallenge.getId());
+
+        System.out.println("\n=== 멀티 서버 Redis 분산락 테스트 결과 ===");
+        System.out.println("실행 시간 : " + (endTime - startTime) + "ms");
+        System.out.println("성공: " + successCount.get() + ", 실패: " + failureCount.get());
+        System.out.println("DB 레코드: " + actualDbCount + "건");
+        System.out.println("Entity 참여자 수: " + challengeRepository.findById(savedChallenge.getId()).get().getCurrentParticipants());
+    }
+
+    // ================= 헬퍼 메서드 =================
     private Challenge createTestChallenge(String title, int maxParticipants) {
         return Challenge.builder()
                 .title(title)
@@ -177,7 +251,7 @@ class ChallengeParticipantServiceTest {
 
     // 멀티스레드 동시 실행용 헬퍼
     private void testConcurrency(int threadCount, BiConsumer<Long, Long> joinFunction) throws InterruptedException {
-        Challenge challenge = createTestChallenge("동시성 테스트 챌린지", 100);
+        Challenge challenge = createTestChallenge("동시성 테스트 챌린지", 200);
         Challenge savedChallenge = challengeRepository.save(challenge);
         List<User> userIds = createTestUsers(threadCount);
 
