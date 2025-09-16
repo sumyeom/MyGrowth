@@ -34,6 +34,7 @@ public enum ErrorCode {
     INVALID_DELETE_TYPE(HttpStatus.BAD_REQUEST, "INVALID_DELETE_TYPE", "유효하지 않은 타입입니다."),
     ALREADY_JOIN_CHALLENGE(HttpStatus.BAD_REQUEST, "ALREADY_JOIN_CHALLENGE", "이미 참여한 챌린지입니다."),
     OVER_PARTICIPANTS(HttpStatus.BAD_REQUEST, "OVER_PARTICIPANTS", "정원이 초과되었습니다."),
+    CONCURRENT_UPDATE_FAILED(HttpStatus.BAD_REQUEST, "CONCURRENT_UPDATE_FAILED", "낙관적 락 오류"),
 
 
     /* 401 인증 오류 */
