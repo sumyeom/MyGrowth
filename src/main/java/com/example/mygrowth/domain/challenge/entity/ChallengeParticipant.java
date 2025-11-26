@@ -25,6 +25,9 @@ public class ChallengeParticipant {
     @Column(nullable = false)
     private ChallengeStatus status;
 
+    @Column(nullable = false)
+    private int logCount;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="user_id")
     private User user;
@@ -38,5 +41,13 @@ public class ChallengeParticipant {
         this.status = status;
         this.user = user;
         this.challenge = challenge;
+    }
+
+    public void increaseLogCount(){
+        this.logCount++;
+    }
+
+    public void updateStatus(ChallengeStatus status){
+        this.status = status;
     }
 }

@@ -1,8 +1,6 @@
 package com.example.mygrowth.domain.aifeedback.controller;
 
-import com.example.mygrowth.domain.aifeedback.dto.UserWeeklyData;
 import com.example.mygrowth.domain.aifeedback.dto.WeeklyFeedbackResponse;
-import com.example.mygrowth.domain.aifeedback.service.AiFeedbackService;
 import com.example.mygrowth.domain.aifeedback.service.WeeklyFeedbackService;
 import com.example.mygrowth.global.config.auth.CustomUserDetails;
 import lombok.RequiredArgsConstructor;

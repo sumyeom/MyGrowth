@@ -16,14 +16,21 @@ public interface RoutineRepository extends JpaRepository<Routine, Long> {
     List<Routine> findByUserId(Long id);
 
     @Query("""
-        SELECT new com.example.mygrowth.domain.routine.dto.RoutineStatsDto(SUM(DISTINCT r.goalCount),COUNT(rl.id))
-        FROM Routine r
-        LEFT JOIN RoutineLog rl ON rl.routine.id = r.id
-            AND rl.date BETWEEN :startDate AND :endDate
-        WHERE r.user.id = :userId
-            AND r.startDate <= :endDate
-            AND (r.endDate IS NULL OR r.endDate >= :startDate)
-    """)
+    SELECT new com.example.mygrowth.domain.routine.dto.RoutineStatsDto(
+        (SELECT COALESCE(SUM(r2.goalCount), 0)
+         FROM Routine r2
+         WHERE r2.user.id = :userId
+           AND r2.startDate <= :endDate
+           AND (r2.endDate IS NULL OR r2.endDate >= :startDate)),
+        COUNT(rl.id)
+    )
+    FROM Routine r
+    LEFT JOIN RoutineLog rl ON rl.routine.id = r.id
+        AND rl.date BETWEEN :startDate AND :endDate
+    WHERE r.user.id = :userId
+      AND r.startDate <= :endDate
+      AND (r.endDate IS NULL OR r.endDate >= :startDate)
+""")
     RoutineStatsDto getRoutineStats(@Param("userId") Long userId,
                                     @Param("startDate")LocalDate startDate,
                                     @Param("endDate")LocalDate endDate);

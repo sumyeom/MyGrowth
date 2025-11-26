@@ -74,7 +74,7 @@ class ChallengeParticipantServiceTest {
             final User user = testUser.get(i);
             executor.submit(() -> {
                 try{
-                    ChallengeParticipantResponseDto result = challengeParticipantService.joinChallenge(savedChallenge.getId(),user);
+                    ChallengeParticipantResponseDto result = challengeParticipantService.joinChallengeWithRedisLockOptimistic(savedChallenge.getId(),user.getId());
                     successCount.incrementAndGet();
                     System.out.println("User " + user.getId()+ " (" +user.getNickname() + ") 참여 성공");
                 } catch(ApiException e){
