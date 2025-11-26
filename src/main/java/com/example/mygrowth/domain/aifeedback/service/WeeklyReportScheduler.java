@@ -82,7 +82,7 @@ public class WeeklyReportScheduler {
                        endOfWeek,
                        successRate,
                        weakDay,
-                       feedback.summary() + "\n" + feedback.weakDay() + "\n" + feedback.advice()
+                       feedback.message()
                );
 
                weeklyReportRepository.save(report);

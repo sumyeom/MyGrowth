@@ -56,6 +56,10 @@ public class Routine extends BaseCreatedEntity {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @OneToMany(mappedBy = "routine", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<RoutineLog> routineLogs = new ArrayList<>();
+
+
     @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RoutineOverride> overrides = new ArrayList<>();
 

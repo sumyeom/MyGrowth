@@ -1,7 +1,4 @@
 package com.example.mygrowth.domain.routine.controller;
-
-import com.example.mygrowth.domain.aifeedback.dto.WeeklyReportDto;
-import com.example.mygrowth.domain.aifeedback.service.WeeklyReportService;
 import com.example.mygrowth.domain.routine.dto.*;
 import com.example.mygrowth.domain.routine.service.RoutineService;
 import com.example.mygrowth.global.config.auth.CustomUserDetails;

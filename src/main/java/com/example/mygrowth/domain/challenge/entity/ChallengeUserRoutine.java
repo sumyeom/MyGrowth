@@ -2,15 +2,17 @@ package com.example.mygrowth.domain.challenge.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name="user_challenge_routine")
+@Table(name="challenge_user_routine")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserChallengeRoutine {
+@Builder
+public class ChallengeUserRoutine {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -21,7 +23,7 @@ public class UserChallengeRoutine {
     @Column(nullable = false)
     private String description;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "challenge_participant_id")
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "challenge_participant_id", unique = true)
     private ChallengeParticipant challengeParticipant;
 }

@@ -35,6 +35,8 @@ public enum ErrorCode {
     ALREADY_JOIN_CHALLENGE(HttpStatus.BAD_REQUEST, "ALREADY_JOIN_CHALLENGE", "이미 참여한 챌린지입니다."),
     OVER_PARTICIPANTS(HttpStatus.BAD_REQUEST, "OVER_PARTICIPANTS", "정원이 초과되었습니다."),
     CONCURRENT_UPDATE_FAILED(HttpStatus.BAD_REQUEST, "CONCURRENT_UPDATE_FAILED", "낙관적 락 오류"),
+    ALREADY_LOGGED_TODAY(HttpStatus.BAD_REQUEST, "ALREADY_LOGGED_TODAY", "오늘은 인증 완료했습니다."),
+    SUCCESS_CHALLENGE(HttpStatus.BAD_REQUEST, "SUCCESS_CHALLENGE", "성공한 챌린지 입니다."),
 
 
     /* 401 인증 오류 */
@@ -50,6 +52,8 @@ public enum ErrorCode {
     ROUTINE_NOT_FOUND(HttpStatus.NOT_FOUND, "ROUTINE_NOT_FOUND", "루틴을 찾을 수 없습니다."),
     REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "REPORT_NOT_FOUND", "리포트를 찾을 수 없습니다."),
     CHALLENGE_NOT_FOUND(HttpStatus.NOT_FOUND, "CHALLENGE_NOT_FOUND", "챌린지를 찾을 수 없습니다."),
+    CHALLENGE_PARTICIPANT_NOT_FOUND(HttpStatus.NOT_FOUND, "CHALLENGE_PARTICIPANT_NOT_FOUND", "참여 기록을 찾을 수 없습니다."),
+    CHALLENGE_USER_ROUTINE_NOT_FOUND(HttpStatus.NOT_FOUND, "CHALLENGE_USER_ROUTINE_NOT_FOUND", "챌린지 루튼을 찾을 수 없습니다."),
 
     /* 500 서버 오류 */
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"INTERNAL_SERVER_ERROR","서버 오류 입니다."),

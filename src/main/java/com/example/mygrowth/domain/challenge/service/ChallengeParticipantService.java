@@ -40,9 +40,9 @@ public class ChallengeParticipantService {
     private static final String LOCK_PREFIX = "challenge:lock:";
 
     /**
-     *
-     * @param challengeId
-     * @param userId
+     * 챌린지 참여
+     * @param challengeId 챌린지 id
+     * @param userId 로그인한 id
      */
     @Transactional
     @Retryable(
@@ -54,7 +54,7 @@ public class ChallengeParticipantService {
         RLock lock = redissonClient.getLock(LOCK_PREFIX + challengeId);
 
         try{
-            // 최대 5초 동안 락 대기 ,10초 동안 락 유지
+            // 최대 5초 동안 락 대기 ,2초 동안 락 유지
             if (lock.tryLock(5, 2, TimeUnit.SECONDS)) {
                 // 챌린지 중복 먼저 체크
                 if (challengeParticipantRepository.existsByChallengeIdAndUserId(challengeId, userId)) {
