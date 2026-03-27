@@ -12,11 +12,7 @@ import com.example.mygrowth.global.exception.ApiException;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.StaleObjectStateException;
-import org.hibernate.dialect.lock.OptimisticEntityLockException;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
-import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
@@ -25,7 +21,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 import static com.example.mygrowth.domain.challenge.enums.ChallengeStatus.ONGOING;
 
@@ -35,9 +30,6 @@ public class ChallengeParticipantService {
     private final ChallengeRepository challengeRepository;
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final UserRepository userRepository;
-    private final RedissonClient redissonClient;
-
-    private static final String LOCK_PREFIX = "challenge:lock:";
 
     /**
      * 챌린지 참여
@@ -46,57 +38,39 @@ public class ChallengeParticipantService {
      */
     @Transactional
     @Retryable(
-            retryFor = OptimisticLockException.class,
-            maxAttempts = 3,
-            backoff = @Backoff(delay = 50)
+            retryFor = {
+                    ObjectOptimisticLockingFailureException.class,
+                    OptimisticLockException.class
+            },
+            maxAttempts = 5,
+            backoff = @Backoff(delay = 100, multiplier = 1.5, random = true)
     )
-    public ChallengeParticipantResponseDto joinChallengeWithRedisLockOptimistic(Long challengeId, Long userId) {
-        RLock lock = redissonClient.getLock(LOCK_PREFIX + challengeId);
+    public ChallengeParticipantResponseDto joinChallenge(Long challengeId, Long userId) {
+        if (challengeParticipantRepository.existsByChallengeIdAndUserId(challengeId, userId)) {
+            throw new ApiException(ErrorCode.ALREADY_JOIN_CHALLENGE);
+        }
 
-        try{
-            // 최대 5초 동안 락 대기 ,2초 동안 락 유지
-            if (lock.tryLock(5, 2, TimeUnit.SECONDS)) {
-                // 챌린지 중복 먼저 체크
-                if (challengeParticipantRepository.existsByChallengeIdAndUserId(challengeId, userId)) {
-                    throw new ApiException(ErrorCode.ALREADY_JOIN_CHALLENGE);
-                }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 
-                User user = userRepository.findById(userId)
-                        .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+        Challenge challenge = challengeRepository.findById(challengeId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CHALLENGE_NOT_FOUND));
 
-                Challenge challenge = challengeRepository.findById(challengeId)
-                        .orElseThrow(() -> new ApiException(ErrorCode.CHALLENGE_NOT_FOUND));
+        if (challenge.getCurrentParticipants() >= challenge.getMaxParticipants()) {
+            throw new ApiException(ErrorCode.OVER_PARTICIPANTS);
+        }
 
-                // 정원 체크
-                if (challenge.getCurrentParticipants() >= challenge.getMaxParticipants()) {
-                    throw new ApiException(ErrorCode.OVER_PARTICIPANTS);
-                }
+        ChallengeParticipant participant = new ChallengeParticipant(
+                LocalDate.now(), ONGOING, user, challenge
+        );
 
-                ChallengeParticipant participant = new ChallengeParticipant(
-                        LocalDate.now(), ONGOING, user, challenge
-                );
-
-                // 챌린지 참여 저장
-                ChallengeParticipant saved = challengeParticipantRepository.save(participant);
-
-                challenge.incrementParticipants();
-
-                // Version 충돌 감지
-                challengeRepository.save(challenge);
-
-                return ChallengeParticipantResponseDto.from(saved);
-
-            } else{
-                System.out.println("User " + userId + " 락 대기 실패");
-                throw new ApiException(ErrorCode.CONCURRENT_UPDATE_FAILED);
-            }
-        }catch(InterruptedException e){
-            throw new RuntimeException(e);
-        } finally{
-            // 락 해제
-            if(lock.isLocked()){
-                lock.unlock();
-            }
+        try {
+            ChallengeParticipant saved = challengeParticipantRepository.save(participant);
+            challenge.incrementParticipants();
+            challengeRepository.save(challenge);
+            return ChallengeParticipantResponseDto.from(saved);
+        } catch (DataIntegrityViolationException e) {
+            throw new ApiException(ErrorCode.ALREADY_JOIN_CHALLENGE);
         }
     }
 
@@ -221,98 +195,8 @@ public class ChallengeParticipantService {
 
     }
 
-    @Transactional
-    @Retryable(
-            retryFor = OptimisticLockException.class,
-            maxAttempts = 10,  // 재시도 횟수 증가
-            backoff = @Backoff(
-                    delay = 100,
-                    multiplier = 1.5,  // 지수 백오프
-                    random = true      // 랜덤 지연
-            )
-    )
-    public void joinChallengeWithOptimisticLock(Long challengeId, Long userId) {
-        // 챌린지 중복 먼저 체크
-        if (challengeParticipantRepository.existsByChallengeIdAndUserId(challengeId, userId)) {
-            throw new ApiException(ErrorCode.ALREADY_JOIN_CHALLENGE);
-        }
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
-
-        Challenge challenge = challengeRepository.findById(challengeId)
-                .orElseThrow(() -> new ApiException(ErrorCode.CHALLENGE_NOT_FOUND));
-
-        // 정원 체크
-        if (challenge.getCurrentParticipants() >= challenge.getMaxParticipants()) {
-            throw new ApiException(ErrorCode.OVER_PARTICIPANTS);
-        }
-
-        ChallengeParticipant participant = new ChallengeParticipant(
-                LocalDate.now(), ONGOING, user, challenge
-        );
-        challengeParticipantRepository.save(participant);
-
-        challenge.incrementParticipants();
-
-        // Version 충돌 감지
-        challengeRepository.save(challenge);
-    }
-
-
-    @Transactional
-    @Retryable(
-            retryFor = OptimisticLockException.class,
-            maxAttempts = 3,
-            backoff = @Backoff(delay = 50)
-    )
-    public void joinChallengeWithRedisLock(Long challengeId, Long userId) {
-        RLock lock = redissonClient.getLock(LOCK_PREFIX + challengeId);
-
-        try{
-            // 최대 5초 동안 락 대기 ,10초 동안 락 유지
-            if (lock.tryLock(5, 2, TimeUnit.SECONDS)) {
-                // 챌린지 중복 먼저 체크
-                if (challengeParticipantRepository.existsByChallengeIdAndUserId(challengeId, userId)) {
-                    throw new ApiException(ErrorCode.ALREADY_JOIN_CHALLENGE);
-                }
-
-                User user = userRepository.findById(userId)
-                        .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
-
-                Challenge challenge = challengeRepository.findById(challengeId)
-                        .orElseThrow(() -> new ApiException(ErrorCode.CHALLENGE_NOT_FOUND));
-
-                // 정원 체크
-                if (challenge.getCurrentParticipants() >= challenge.getMaxParticipants()) {
-                    throw new ApiException(ErrorCode.OVER_PARTICIPANTS);
-                }
-
-                ChallengeParticipant participant = new ChallengeParticipant(
-                        LocalDate.now(), ONGOING, user, challenge
-                );
-                challengeParticipantRepository.save(participant);
-
-                challenge.incrementParticipants();
-
-                // Version 충돌 감지
-                challengeRepository.save(challenge);
-            } else{
-                System.out.println("User " + userId + " 락 대기 실패");
-                throw new ApiException(ErrorCode.CONCURRENT_UPDATE_FAILED);
-            }
-        }catch(InterruptedException e){
-            throw new RuntimeException(e);
-        } finally{
-            // 락 해제
-            if(lock.isLocked()){
-                lock.unlock(); 
-            }
-        }
-    }
-
     @Recover
-    public void recover(OptimisticLockException e, Long challengeId, Long userId) {
+    public ChallengeParticipantResponseDto recoverOptimisticLock(Exception e, Long challengeId, Long userId) {
         throw new ApiException(ErrorCode.CONCURRENT_UPDATE_FAILED);
     }
 }

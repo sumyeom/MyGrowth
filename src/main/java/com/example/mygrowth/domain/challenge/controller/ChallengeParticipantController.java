@@ -36,7 +36,7 @@ public class ChallengeParticipantController {
             @PathVariable Long id,
             @AuthenticationPrincipal CustomUserDetails customUserDetails
     ){
-        ChallengeParticipantResponseDto responseDto = challengeParticipantService.joinChallengeWithRedisLockOptimistic(id, customUserDetails.getUser().getId());
+        ChallengeParticipantResponseDto responseDto = challengeParticipantService.joinChallenge(id, customUserDetails.getUser().getId());
         return new  ResponseEntity<>(responseDto, HttpStatus.OK);
     }
 
