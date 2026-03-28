@@ -1,5 +1,6 @@
 package com.example.mygrowth.global.filter;
 
+import com.example.mygrowth.domain.auth.service.BlacklistService;
 import com.example.mygrowth.global.provider.JwtProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,6 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
     private final UserDetailsService userDetailsService;
+    private final BlacklistService blacklistService;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -50,6 +52,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String authHeader = request.getHeader("Authorization");
         if( authHeader!= null && authHeader.startsWith("Bearer ")){
             String token = authHeader.substring(7);
+
+            if(blacklistService.isBlacklisted(token)){
+                log.info("블랙리스트 토큰입니다.");
+                return;
+            }
             if(jwtProvider.validToken(token)){
                 String email = jwtProvider.getEmailFromToken(token);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
