@@ -1,172 +1,212 @@
 # MyGrowth
 
-MyGrowth는 반복 루틴을 기록하고 달성률을 확인하며, 챌린지 참여와 주간 AI 피드백을 통해 습관 형성을 돕는 Spring Boot 기반 백엔드 프로젝트입니다.
+MyGrowth는 개인 루틴 관리, 챌린지 참여, 주간 AI 피드백을 제공하는 Spring Boot 기반 백엔드 프로젝트입니다. 사용자는 반복 루틴을 만들고 날짜별 수행 여부를 기록할 수 있으며, 챌린지를 통해 목표 달성을 관리하고 주간 루틴 데이터를 바탕으로 AI 피드백을 받을 수 있습니다.
 
-## Overview
+## 주요 기능
 
-- 반복 주기 기반 루틴 생성, 조회, 수정, 삭제
-- 날짜별 루틴 체크인 및 주간·월간 달성률 통계
 - JWT 기반 회원가입, 로그인, 로그아웃, Access Token 재발급
-- Redis TTL 기반 Refresh Token 관리
-- 챌린지 생성, 조회, 참여 기능
-- 챌린지 참여 시 `@Version` 기반 낙관적 락으로 동시성 제어
-- 주간 루틴 데이터를 바탕으로 한 AI 피드백 API
+- Redis TTL 기반 Refresh Token 저장 및 관리
+- 사용자 프로필 조회 및 수정
+- 반복 주기 기반 루틴 생성, 조회, 수정, 삭제
+- 날짜별 루틴 조회 및 루틴 체크인
+- 주간, 월간 루틴 성공률 통계 조회
+- 챌린지 생성, 조회, 수정, 삭제
+- 챌린지 참여 및 챌린지별 개인 루틴 등록
+- 챌린지 인증 로그 등록
+- 주간 루틴 데이터를 활용한 AI 피드백 조회
+- Swagger UI 기반 API 문서 제공
 
-## Tech Stack
+## 기술 스택
 
-- Language: Java 17
-- Framework: Spring Boot 3.5.3, Spring Security, Spring Data JPA, Spring Retry
-- Database: MySQL, H2
-- Cache: Redis
-- API Docs: Swagger UI
-- Build: Gradle
-- Other: QueryDSL, Spring AI, AWS S3
+| 구분 | 기술 |
+| --- | --- |
+| Language | Java 17 |
+| Framework | Spring Boot 3.5.3, Spring Security, Spring Data JPA |
+| Database | MySQL, H2 |
+| Cache | Redis, Redisson |
+| Authentication | JWT |
+| AI | Spring AI, OpenAI-compatible Gemini endpoint |
+| API Docs | springdoc-openapi, Swagger UI |
+| Build | Gradle |
+| Test | JUnit 5, Mockito, AssertJ, Spring Security Test |
+| Other | QueryDSL, Lombok, Spring Retry, AWS S3 SDK |
 
-## Architecture
+## 시스템 구조
 
 ```mermaid
 flowchart LR
-    A["Client"] --> B["Spring Boot API"]
-    B --> C["MySQL"]
-    B --> D["Redis"]
-    B --> E["AI Feedback"]
+    Client["Client"] --> API["Spring Boot API"]
+    API --> MySQL["MySQL"]
+    API --> Redis["Redis"]
+    API --> AI["AI Feedback API"]
+    API --> S3["AWS S3"]
 ```
 
-- `MySQL`은 회원, 루틴, 루틴 로그, 챌린지, 주간 리포트 데이터를 저장합니다.
-- `Redis`는 Refresh Token TTL 관리에 사용합니다.
-- AI 피드백 기능은 주간 루틴 데이터를 바탕으로 응답을 생성합니다.
+- MySQL은 회원, 루틴, 루틴 로그, 챌린지, 챌린지 로그, 주간 리포트 데이터를 저장합니다.
+- Redis는 Refresh Token과 인증 관련 상태를 TTL 기반으로 관리합니다.
+- AI 피드백 기능은 주간 루틴 데이터를 기반으로 피드백 응답을 생성합니다.
+- S3 연동 의존성이 포함되어 있으며, 이미지 저장 기능 확장에 사용할 수 있습니다.
 
-## Main Features
-
-### 1. Auth
-
-- `POST /api/auth/signup`: 회원가입
-- `POST /api/auth/login`: 로그인
-- `POST /api/auth/logout`: 로그아웃
-- `POST /api/auth/refresh`: Access Token 재발급
-
-로그인 시 Access Token을 발급하고, Refresh Token은 Redis와 쿠키를 함께 사용해 관리합니다.
-
-### 2. Routine
-
-- `POST /api/routines`: 루틴 생성
-- `GET /api/routines`: 전체 루틴 조회
-- `GET /api/routines/by-date`: 날짜 기준 루틴 조회
-- `GET /api/routines/{id}?date=...`: 단건 조회
-- `PATCH /api/routines/{id}`: 루틴 수정
-- `DELETE /api/routines/{id}`: 루틴 삭제
-- `POST /api/routines/{routineId}/checkin`: 루틴 체크인
-- `GET /api/routines/statistics/success-rate`: 주간·월간 달성률 조회
-
-반복 타입은 요일 기반, 월간, 연간 패턴을 지원합니다.
-
-### 3. Challenge
-
-- `POST /api/challenges`: 챌린지 생성
-- `GET /api/challenges`: 챌린지 목록 조회
-- `GET /api/challenges/{id}`: 챌린지 단건 조회
-- `PATCH /api/challenges/{id}`: 챌린지 수정
-- `DELETE /api/challenges/{id}`: 챌린지 삭제
-- `POST /api/challenges/{id}/join`: 챌린지 참여
-
-챌린지 참여 기능은 `Challenge` 엔티티의 `@Version`을 활용한 낙관적 락과 재시도 로직으로 동시 요청 상황을 제어합니다.
-
-### 4. AI Feedback
-
-- `GET /api/ai/weekly-feedback`: 주간 AI 피드백 조회
-
-루틴 수행 데이터를 기반으로 주간 피드백을 생성합니다. 스케줄링 기반 주간 리포트 저장 로직도 포함되어 있습니다.
-
-## Concurrency Handling
-
-챌린지 참여 기능은 동시에 여러 사용자가 같은 챌린지에 참여할 때 정원 초과나 참여자 수 불일치를 방지해야 합니다.
-
-- `Challenge` 엔티티에 `@Version` 적용
-- `@Retryable`을 사용해 낙관적 락 충돌 시 재시도
-- `challenge_participant`에 `(challenge_id, user_id)` 유니크 제약을 두어 중복 참여 방지
-
-이 구조로 애플리케이션 레벨에서는 충돌을 감지하고, DB 레벨에서는 데이터 무결성을 보장합니다.
-
-## Troubleshooting
-
-### 1. 새로고침 시 로그인 해제 문제
-
-- 현상: 페이지 새로고침 시 로그인 상태가 유지되지 않고 로그인 화면으로 이동
-- 원인:
-  - Access Token을 메모리에만 저장해 새로고침 시 사라짐
-  - Refresh Token 쿠키에 `Secure=true`가 적용되어 HTTP 개발 환경에서 전송되지 않음
-- 해결:
-  - 개발 환경에서는 쿠키 `Secure` 옵션을 분리 적용
-  - Redis TTL 기반 Refresh Token 관리로 재발급 흐름 보강
-- 배운 점: 인증 문제는 토큰 저장 위치뿐 아니라 쿠키 정책과 실행 환경까지 함께 고려해야 함
-
-### 2. 챌린지 참여 동시성 문제
-
-- 현상: 동시 요청 시 정원 초과 또는 참여자 수 불일치 가능성 존재
-- 해결:
-  - `@Version` 기반 낙관적 락 적용
-  - 충돌 발생 시 재시도 로직 추가
-  - DB 유니크 제약으로 중복 참여 방지
-- 배운 점: 동시성 문제는 락 전략과 데이터 무결성 제약을 함께 설계해야 안정적으로 해결 가능
-
-## Project Structure
+## 프로젝트 구조
 
 ```text
 src/main/java/com/example/mygrowth
+├── MyGrowthApplication.java
 ├── domain
 │   ├── auth
+│   │   ├── controller
+│   │   ├── dto
+│   │   └── service
 │   ├── user
 │   ├── routine
 │   ├── challenge
 │   └── aifeedback
 └── global
+    ├── common
     ├── config
-    ├── provider
+    ├── constant
+    ├── exception
     ├── filter
-    └── exception
+    └── provider
 ```
 
-## Getting Started
+## 시작하기
 
-### 1. Requirements
+### 요구사항
 
 - Java 17
 - MySQL
 - Redis
 
-### 2. Environment Variables
+### 환경 변수
 
-`src/main/resources/application.properties` 기준으로 아래 환경 변수가 필요합니다.
+애플리케이션은 `application.properties`에서 `.env` 파일을 선택적으로 불러옵니다. 프로젝트 루트에 `.env` 파일을 만들고 아래 값을 설정합니다.
 
 ```env
 MYSQL_URL=jdbc:mysql://localhost:3306/mygrowth
-MYSQL_USERNAME=your_username
-MYSQL_PASSWORD=your_password
+MYSQL_USERNAME=your_mysql_username
+MYSQL_PASSWORD=your_mysql_password
 JPA_HIBERNATE_DDL=update
 JWT_SECRET=your_jwt_secret
 REDIS_HOST=localhost
-OPENAI_KEY=your_openai_key
+OPENAI_KEY=your_openai_or_gemini_compatible_key
 GEMINI_KEY=your_gemini_key
 ```
 
-### 3. Run
+`JWT_SECRET`은 JWT 서명에 사용되므로 충분히 긴 임의 문자열을 사용하는 것이 좋습니다.
+
+### 실행
 
 ```bash
-bash ./gradlew bootRun
+./gradlew bootRun
 ```
 
-애플리케이션 기본 포트는 `8081`입니다.
+기본 서버 포트는 `8081`입니다.
 
-## API Docs
+```text
+http://localhost:8081
+```
 
-Swagger UI:
-
-- [http://localhost:8081/swagger-ui](http://localhost:8081/swagger-ui)
-
-## Test
+### 테스트
 
 ```bash
-bash ./gradlew test
+./gradlew test
 ```
 
-테스트 실행 시 인증 관련 설정값이 필요하므로 `JWT_SECRET` 등의 환경 변수를 함께 설정해야 합니다.
+테스트 실행 시에도 `JWT_SECRET` 등 인증 관련 설정값이 필요할 수 있습니다.
+
+## API 문서
+
+애플리케이션 실행 후 Swagger UI에서 API를 확인할 수 있습니다.
+
+```text
+http://localhost:8081/swagger-ui
+```
+
+## 주요 API
+
+### Auth
+
+| Method | Endpoint | 설명 |
+| --- | --- | --- |
+| POST | `/api/auth/signup` | 회원가입 |
+| POST | `/api/auth/login` | 로그인 |
+| POST | `/api/auth/logout` | 로그아웃 |
+| POST | `/api/auth/refresh` | Access Token 재발급 |
+
+### User
+
+| Method | Endpoint | 설명 |
+| --- | --- | --- |
+| GET | `/api/users/profile` | 내 프로필 조회 |
+| PATCH | `/api/users/profile` | 내 프로필 수정 |
+
+### Routine
+
+| Method | Endpoint | 설명 |
+| --- | --- | --- |
+| POST | `/api/routines` | 루틴 생성 |
+| GET | `/api/routines` | 전체 루틴 조회 |
+| GET | `/api/routines/by-date` | 날짜 기준 루틴 조회 |
+| GET | `/api/routines/{id}` | 루틴 단건 조회 |
+| PATCH | `/api/routines/{id}` | 루틴 수정 |
+| DELETE | `/api/routines/{id}` | 루틴 삭제 |
+| POST | `/api/routines/{routineId}/checkin` | 루틴 체크인 |
+| GET | `/api/routines/statistics/success-rate` | 루틴 성공률 통계 조회 |
+
+### Challenge
+
+| Method | Endpoint | 설명 |
+| --- | --- | --- |
+| POST | `/api/challenges` | 챌린지 생성 |
+| GET | `/api/challenges` | 챌린지 목록 조회 |
+| GET | `/api/challenges/{id}` | 챌린지 단건 조회 |
+| PATCH | `/api/challenges/{id}` | 챌린지 수정 |
+| DELETE | `/api/challenges/{id}` | 챌린지 삭제 |
+| POST | `/api/challenges/{id}/join` | 챌린지 참여 |
+| POST | `/api/challenges/{id}/my-routines` | 챌린지용 개인 루틴 등록 |
+| GET | `/api/challenges/{id}/my-routines` | 챌린지용 개인 루틴 조회 |
+| POST | `/api/challenges/{id}/log` | 챌린지 인증 로그 등록 |
+
+### AI Feedback
+
+| Method | Endpoint | 설명 |
+| --- | --- | --- |
+| GET | `/api/ai/weekly-feedback` | 주간 AI 피드백 조회 |
+
+## 인증 방식
+
+로그인에 성공하면 Access Token과 Refresh Token을 발급합니다. Access Token은 API 인증에 사용하며, Refresh Token은 Redis에 TTL과 함께 저장되어 Access Token 재발급에 사용됩니다.
+
+인증이 필요한 API는 아래 형식의 Authorization 헤더를 사용합니다.
+
+```http
+Authorization: Bearer <access-token>
+```
+
+## 챌린지 동시성 처리
+
+챌린지 참여 기능은 동시에 여러 사용자가 같은 챌린지에 참여할 때 정원 초과와 참여자 수 불일치가 발생하지 않도록 설계되어 있습니다.
+
+- `Challenge` 엔티티의 `@Version`을 활용한 낙관적 락
+- `@Retryable` 기반 재시도 처리
+- `challenge_participant`의 `(challenge_id, user_id)` 유니크 제약을 통한 중복 참여 방지
+
+애플리케이션 레벨에서는 버전 충돌을 감지하고, 데이터베이스 레벨에서는 참여 데이터의 무결성을 보장합니다.
+
+## 트러블슈팅 기록
+
+### 새로고침 시 로그인 상태가 유지되지 않는 문제
+
+- 원인: Access Token을 메모리에만 저장하면 브라우저 새로고침 시 토큰이 사라질 수 있습니다.
+- 원인: 개발 환경에서 Refresh Token 쿠키에 `Secure=true`가 적용되면 HTTP 요청에 쿠키가 포함되지 않을 수 있습니다.
+- 해결: 개발 환경과 운영 환경의 쿠키 옵션을 분리하고, Redis TTL 기반 Refresh Token 관리로 재발급 흐름을 보강합니다.
+
+### 챌린지 참여 동시성 문제
+
+- 원인: 동시에 여러 참여 요청이 들어오면 정원 초과 또는 참여자 수 불일치가 발생할 수 있습니다.
+- 해결: `@Version` 기반 낙관적 락, 재시도 로직, DB 유니크 제약을 함께 적용합니다.
+
+## 라이선스
+
+현재 별도 라이선스 파일은 포함되어 있지 않습니다.
